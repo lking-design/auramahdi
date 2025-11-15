@@ -22,4 +22,3 @@ export const useLanguageStore = create<LanguageStore>()((set) => {
     },
   }
 })
-

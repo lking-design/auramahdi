@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { FiEdit, FiTrash2, FiPlus } from 'react-icons/fi'
 import { useLanguageStore } from '@/store/languageStore'
 
@@ -48,11 +48,7 @@ export default function AdminDashboard() {
     featured: false,
   })
 
-  useEffect(() => {
-    fetchData()
-  }, [activeTab])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       if (activeTab === 'products') {
@@ -69,7 +65,12 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeTab, API_URL])
+
+  useEffect(() => {
+    fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
 
   const handleDeleteProduct = async (id: string) => {
     if (!confirm(language === 'fr' ? 'Supprimer ce produit ?' : 'حذف هذا المنتج؟')) return
@@ -406,18 +407,3 @@ export default function AdminDashboard() {
     </div>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

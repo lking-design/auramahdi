@@ -205,7 +205,7 @@ export default function OffersPage() {
                 Create Your Own Custom Perfume
               </h2>
               <p className="text-xl text-white/80 mb-8 leading-relaxed">
-                Not finding what you're looking for? Design your own custom fragrance!
+                Not finding what you&apos;re looking for? Design your own custom fragrance!
               </p>
               <Link
                 href="/builder"

@@ -82,14 +82,13 @@ export default function PerfumeBuilderPage() {
 
       if (response.ok) {
         const savedPerfume = await response.json()
-        const selectedBottleImg = bottles.find(b => b.id === customPerfume.bottle)
         
         addItem({
           productId: savedPerfume._id,
           name: `Custom: ${customPerfume.bottleName} - ${customPerfume.scentName}`,
           price: savedPerfume.price,
           quantity: 1,
-          image: selectedBottleImg?.image || '',
+          image: '/placeholder-perfume.jpg',
         })
         
         router.push('/checkout')
