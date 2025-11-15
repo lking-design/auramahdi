@@ -48,7 +48,15 @@ export default function ProductDetailPage() {
   const { language } = useLanguageStore()
   const t = translations[language]
   const [mounted, setMounted] = useState(false)
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+  const getApiUrl = (): string => {
+    if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname !== 'localhost' && hostname !== '127.0.0.1') return '';
+    }
+    return 'http://localhost:3001';
+  };
+  const API_URL = getApiUrl()
   const productId = params.id as string
 
   useEffect(() => {

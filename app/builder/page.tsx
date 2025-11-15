@@ -70,7 +70,21 @@ export default function PerfumeBuilderPage() {
 
     setLoading(true)
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+      const getApiUrl = (): string => {
+        if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+        if (typeof window !== 'undefined') {
+          const hostname = window.location.hostname;
+          if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+            // In production, try to construct backend URL
+            const frontendUrl = window.location.origin;
+            const backendUrl = frontendUrl.replace('frontend', 'backend').replace('parfumex-frontend', 'parfumex-backend');
+            if (backendUrl !== frontendUrl) return backendUrl;
+            return '';
+          }
+        }
+        return 'http://localhost:3001';
+      };
+      const API_URL = getApiUrl()
       
       const response = await fetch(`${API_URL}/api/custom-perfumes`, {
         method: 'POST',

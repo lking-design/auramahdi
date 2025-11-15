@@ -25,7 +25,28 @@ interface AuthStore {
   updateProfile: (data: Partial<User>) => Promise<void>
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+// Get API URL - use environment variable or detect from current location
+const getApiUrl = (): string => {
+  // If explicitly set, use it
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // In browser, try to detect from current origin
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // If not localhost, we're in production - use same origin (relative URLs)
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return ''; // Use relative URLs in production
+    }
+  }
+  
+  // Default to localhost for development
+  return 'http://localhost:3001';
+};
+
+const API_URL = getApiUrl();
 
 export const useAuthStore = create<AuthStore>()((set, get) => {
   // Always start with empty state (same on server and client)
@@ -62,7 +83,10 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
         }).catch((err) => {
-          throw new Error(`Cannot connect to server. Make sure the backend is running on ${API_URL}`)
+          const errorMsg = process.env.NEXT_PUBLIC_API_URL 
+            ? `Cannot connect to backend at ${API_URL}. Make sure the backend service is running.`
+            : `Backend URL not configured. Please set NEXT_PUBLIC_API_URL environment variable in Render dashboard to your backend URL (e.g., https://parfumex-backend.onrender.com)`;
+          throw new Error(errorMsg);
         })
 
         if (!response.ok) {
@@ -97,7 +121,10 @@ export const useAuthStore = create<AuthStore>()((set, get) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password, phone }),
         }).catch((err) => {
-          throw new Error(`Cannot connect to server. Make sure the backend is running on ${API_URL}`)
+          const errorMsg = process.env.NEXT_PUBLIC_API_URL 
+            ? `Cannot connect to backend at ${API_URL}. Make sure the backend service is running.`
+            : `Backend URL not configured. Please set NEXT_PUBLIC_API_URL environment variable in Render dashboard to your backend URL (e.g., https://parfumex-backend.onrender.com)`;
+          throw new Error(errorMsg);
         })
 
         if (!response.ok) {
