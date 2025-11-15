@@ -1,0 +1,115 @@
+const pool = require('../db');
+const bcrypt = require('bcryptjs');
+
+class User {
+  static async create(userData) {
+    const { name, email, password, phone, address, role = 'user' } = userData;
+    
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const [result] = await pool.execute(
+      `INSERT INTO users (name, email, password, phone, address_street, address_city, address_zipCode, role)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        name,
+        email.toLowerCase().trim(),
+        hashedPassword,
+        phone || null,
+        address?.street || null,
+        address?.city || null,
+        address?.zipCode || null,
+        role,
+      ]
+    );
+
+    return this.findById(result.insertId);
+  }
+
+  static async findById(id) {
+    const [rows] = await pool.execute(
+      'SELECT id, name, email, phone, address_street, address_city, address_zipCode, role, createdAt, updatedAt FROM users WHERE id = ?',
+      [id]
+    );
+    if (rows.length === 0) return null;
+    return this.formatUser(rows[0]);
+  }
+
+  static async findByEmail(email) {
+    const [rows] = await pool.execute(
+      'SELECT * FROM users WHERE email = ?',
+      [email.toLowerCase().trim()]
+    );
+    if (rows.length === 0) return null;
+    return rows[0];
+  }
+
+  static async comparePassword(candidatePassword, hashedPassword) {
+    return bcrypt.compare(candidatePassword, hashedPassword);
+  }
+
+  static async update(id, updates) {
+    const fields = [];
+    const values = [];
+
+    if (updates.name) {
+      fields.push('name = ?');
+      values.push(updates.name);
+    }
+    if (updates.phone !== undefined) {
+      fields.push('phone = ?');
+      values.push(updates.phone);
+    }
+    if (updates.address) {
+      if (updates.address.street !== undefined) {
+        fields.push('address_street = ?');
+        values.push(updates.address.street);
+      }
+      if (updates.address.city !== undefined) {
+        fields.push('address_city = ?');
+        values.push(updates.address.city);
+      }
+      if (updates.address.zipCode !== undefined) {
+        fields.push('address_zipCode = ?');
+        values.push(updates.address.zipCode);
+      }
+    }
+
+    if (fields.length === 0) return this.findById(id);
+
+    values.push(id);
+    await pool.execute(
+      `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
+      values
+    );
+
+    return this.findById(id);
+  }
+
+  static formatUser(user) {
+    if (!user) return null;
+    const formatted = {
+      _id: user.id,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      address: {
+        street: user.address_street,
+        city: user.address_city,
+        zipCode: user.address_zipCode,
+      },
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+    // Remove null address fields
+    if (!formatted.address.street && !formatted.address.city && !formatted.address.zipCode) {
+      formatted.address = undefined;
+    }
+    return formatted;
+  }
+}
+
+module.exports = User;

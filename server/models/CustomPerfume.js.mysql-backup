@@ -1,0 +1,81 @@
+const pool = require('../db');
+
+class CustomPerfume {
+  static async create(customPerfumeData) {
+    const {
+      userId = 'guest',
+      bottle,
+      bottleName,
+      perfumeType,
+      perfumeTypeName,
+      scent,
+      scentName,
+      concentration,
+      price,
+      status = 'pending',
+    } = customPerfumeData;
+
+    const [result] = await pool.execute(
+      `INSERT INTO custom_perfumes (userId, bottle, bottleName, perfumeType, perfumeTypeName, 
+       scent, scentName, concentration, price, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        bottle,
+        bottleName,
+        perfumeType,
+        perfumeTypeName,
+        scent,
+        scentName,
+        concentration,
+        price,
+        status,
+      ]
+    );
+
+    return this.findById(result.insertId);
+  }
+
+  static async findById(id) {
+    const [rows] = await pool.execute('SELECT * FROM custom_perfumes WHERE id = ?', [id]);
+    if (rows.length === 0) return null;
+    return this.formatCustomPerfume(rows[0]);
+  }
+
+  static async find(query = {}) {
+    let sql = 'SELECT * FROM custom_perfumes WHERE 1=1';
+    const params = [];
+
+    if (query.userId) {
+      sql += ' AND userId = ?';
+      params.push(query.userId);
+    }
+
+    sql += ' ORDER BY createdAt DESC';
+
+    const [rows] = await pool.execute(sql, params);
+    return rows.map(this.formatCustomPerfume);
+  }
+
+  static formatCustomPerfume(customPerfume) {
+    if (!customPerfume) return null;
+    return {
+      _id: customPerfume.id,
+      id: customPerfume.id,
+      userId: customPerfume.userId,
+      bottle: customPerfume.bottle,
+      bottleName: customPerfume.bottleName,
+      perfumeType: customPerfume.perfumeType,
+      perfumeTypeName: customPerfume.perfumeTypeName,
+      scent: customPerfume.scent,
+      scentName: customPerfume.scentName,
+      concentration: customPerfume.concentration,
+      price: parseFloat(customPerfume.price),
+      status: customPerfume.status,
+      createdAt: customPerfume.createdAt,
+      updatedAt: customPerfume.updatedAt,
+    };
+  }
+}
+
+module.exports = CustomPerfume;

@@ -1,0 +1,143 @@
+const pool = require('../db');
+
+class Product {
+  static async find(query = {}) {
+    let sql = 'SELECT * FROM products WHERE 1=1';
+    const params = [];
+
+    if (query.category) {
+      sql += ' AND category = ?';
+      params.push(query.category);
+    }
+
+    if (query.featured === true || query.featured === 'true') {
+      sql += ' AND featured = TRUE';
+    }
+
+    if (query.search) {
+      sql += ' AND (name LIKE ? OR nameAr LIKE ? OR description LIKE ?)';
+      const searchTerm = `%${query.search}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    sql += ' ORDER BY createdAt DESC';
+
+    const [rows] = await pool.execute(sql, params);
+    return rows.map(this.formatProduct);
+  }
+
+  static async findById(id) {
+    // Handle both string and number IDs
+    const productId = parseInt(id) || id;
+    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [productId]);
+    if (rows.length === 0) return null;
+    return this.formatProduct(rows[0]);
+  }
+
+  static async create(productData) {
+    const {
+      name, nameAr, description, descriptionAr, price, category, subcategory,
+      images, fragranceNotes, stock, featured, rating, reviews
+    } = productData;
+
+    const [result] = await pool.execute(
+      `INSERT INTO products (name, nameAr, description, descriptionAr, price, category, subcategory, 
+       images, fragranceNotes_top, fragranceNotes_heart, fragranceNotes_base, stock, featured, rating, reviews)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        name,
+        nameAr,
+        description,
+        descriptionAr,
+        price,
+        category,
+        subcategory || null,
+        JSON.stringify(images || []),
+        JSON.stringify(fragranceNotes?.top || []),
+        JSON.stringify(fragranceNotes?.heart || []),
+        JSON.stringify(fragranceNotes?.base || []),
+        stock || 0,
+        featured || false,
+        rating || 0,
+        JSON.stringify(reviews || []),
+      ]
+    );
+
+    return this.findById(result.insertId);
+  }
+
+  static async update(id, updates) {
+    const fields = [];
+    const values = [];
+
+    Object.keys(updates).forEach(key => {
+      if (key === 'images' || key === 'fragranceNotes' || key === 'reviews') {
+        // Handle JSON fields
+        if (key === 'fragranceNotes') {
+          if (updates[key].top) {
+            fields.push('fragranceNotes_top = ?');
+            values.push(JSON.stringify(updates[key].top));
+          }
+          if (updates[key].heart) {
+            fields.push('fragranceNotes_heart = ?');
+            values.push(JSON.stringify(updates[key].heart));
+          }
+          if (updates[key].base) {
+            fields.push('fragranceNotes_base = ?');
+            values.push(JSON.stringify(updates[key].base));
+          }
+        } else {
+          fields.push(`${key} = ?`);
+          values.push(JSON.stringify(updates[key]));
+        }
+      } else if (updates[key] !== undefined) {
+        fields.push(`${key} = ?`);
+        values.push(updates[key]);
+      }
+    });
+
+    if (fields.length === 0) return this.findById(id);
+
+    values.push(id);
+    await pool.execute(
+      `UPDATE products SET ${fields.join(', ')} WHERE id = ?`,
+      values
+    );
+
+    return this.findById(id);
+  }
+
+  static async delete(id) {
+    await pool.execute('DELETE FROM products WHERE id = ?', [id]);
+    return true;
+  }
+
+  static formatProduct(product) {
+    if (!product) return null;
+    return {
+      _id: product.id,
+      id: product.id,
+      name: product.name,
+      nameAr: product.nameAr,
+      description: product.description,
+      descriptionAr: product.descriptionAr,
+      price: parseFloat(product.price),
+      category: product.category,
+      subcategory: product.subcategory,
+      images: product.images ? JSON.parse(product.images) : [],
+      fragranceNotes: {
+        top: product.fragranceNotes_top ? JSON.parse(product.fragranceNotes_top) : [],
+        heart: product.fragranceNotes_heart ? JSON.parse(product.fragranceNotes_heart) : [],
+        base: product.fragranceNotes_base ? JSON.parse(product.fragranceNotes_base) : [],
+      },
+      stock: product.stock,
+      featured: Boolean(product.featured),
+      rating: parseFloat(product.rating),
+      reviews: product.reviews ? JSON.parse(product.reviews) : [],
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+    };
+  }
+}
+
+module.exports = Product;

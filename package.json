@@ -1,0 +1,53 @@
+{
+  "name": "parfumex",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "server": "node server/index.js",
+    "seed": "node server/seed.js",
+    "seed-supabase": "node server/seed-supabase.js",
+    "init-db": "node server/init-db.js",
+    "switch-supabase": "node server/switch-to-supabase.js",
+    "test-supabase": "node server/test-supabase.js",
+    "check-env": "node check-env.js",
+    "setup-env": "node setup-env.js",
+    "test-telegram": "node server/test-telegram.js",
+    "test-order": "node server/test-order.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.81.1",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "framer-motion": "^10.16.16",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.3",
+    "mysql2": "^3.15.3",
+    "next": "^14.0.4",
+    "node-telegram-bot-api": "^0.66.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.12.0",
+    "stripe": "^14.9.0",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.0.4",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.3.3"
+  }
+}

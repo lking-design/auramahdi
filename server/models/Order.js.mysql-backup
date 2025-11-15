@@ -1,0 +1,109 @@
+const pool = require('../db');
+
+class Order {
+  static async create(orderData) {
+    const {
+      user, customer, items, subtotal, shipping, total, paymentMethod, status = 'pending'
+    } = orderData;
+
+    // Generate order number
+    const [countRows] = await pool.execute('SELECT COUNT(*) as count FROM orders');
+    const count = countRows[0].count;
+    const orderNumber = `ORD-${Date.now()}-${count + 1}`;
+
+    const [result] = await pool.execute(
+      `INSERT INTO orders (orderNumber, userId, customer_name, customer_address, customer_city, 
+       customer_phone, customer_email, items, subtotal, shipping, total, paymentMethod, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        orderNumber,
+        user || null,
+        customer.name,
+        customer.address,
+        customer.city,
+        customer.phone,
+        customer.email || null,
+        JSON.stringify(items),
+        subtotal,
+        shipping,
+        total,
+        paymentMethod,
+        status,
+      ]
+    );
+
+    return this.findById(result.insertId);
+  }
+
+  static async findById(id) {
+    const [rows] = await pool.execute('SELECT * FROM orders WHERE id = ?', [id]);
+    if (rows.length === 0) return null;
+    return this.formatOrder(rows[0]);
+  }
+
+  static async findByOrderNumber(orderNumber) {
+    const [rows] = await pool.execute('SELECT * FROM orders WHERE orderNumber = ?', [orderNumber]);
+    if (rows.length === 0) return null;
+    return this.formatOrder(rows[0]);
+  }
+
+  static async findByUserId(userId) {
+    const [rows] = await pool.execute(
+      'SELECT * FROM orders WHERE userId = ? ORDER BY createdAt DESC',
+      [userId]
+    );
+    return rows.map(this.formatOrder);
+  }
+
+  static async findAll() {
+    const [rows] = await pool.execute('SELECT * FROM orders ORDER BY createdAt DESC');
+    return rows.map(this.formatOrder);
+  }
+
+  static async update(id, updates) {
+    const fields = [];
+    const values = [];
+
+    if (updates.status) {
+      fields.push('status = ?');
+      values.push(updates.status);
+    }
+
+    if (fields.length === 0) return this.findById(id);
+
+    values.push(id);
+    await pool.execute(
+      `UPDATE orders SET ${fields.join(', ')} WHERE id = ?`,
+      values
+    );
+
+    return this.findById(id);
+  }
+
+  static formatOrder(order) {
+    if (!order) return null;
+    return {
+      _id: order.id,
+      id: order.id,
+      orderNumber: order.orderNumber,
+      user: order.userId,
+      customer: {
+        name: order.customer_name,
+        address: order.customer_address,
+        city: order.customer_city,
+        phone: order.customer_phone,
+        email: order.customer_email,
+      },
+      items: order.items ? JSON.parse(order.items) : [],
+      subtotal: parseFloat(order.subtotal),
+      shipping: parseFloat(order.shipping),
+      total: parseFloat(order.total),
+      paymentMethod: order.paymentMethod,
+      status: order.status,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+    };
+  }
+}
+
+module.exports = Order;
